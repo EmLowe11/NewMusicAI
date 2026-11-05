@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>NewMusic AI — Create songs from words</title>
+  <meta name="description" content="Turn an idea into a full song in minutes. AI music generation with vocals, lyrics and instrumentals." />
+  <meta name="theme-color" content="#0b0b12" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%237c5cff'/%3E%3Cpath d='M26 44a6 6 0 1 1-4-5.66V18l20-4v24a6 6 0 1 1-4-5.66V20.9l-12 2.4Z' fill='white'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M9 17.5a3 3 0 1 1-2-2.83V6l10-2v11.5a3 3 0 1 1-2-2.83V7.44l-6 1.2Z"/></svg>
+      </span>
+      NewMusic<span class="brand-ai">AI</span>
+    </a>
+    <div class="topbar-right">
+      <button class="credits" id="creditsBtn" type="button" title="Remaining API credits">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="currentColor" d="M12 7l1.5 3.2 3.5.4-2.6 2.4.7 3.5L12 14.8 8.9 16.5l.7-3.5L7 10.6l3.5-.4z"/></svg>
+        <span id="creditsVal">—</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ============ CREATE PANEL ============ -->
+    <section class="panel create" aria-labelledby="createTitle">
+      <div class="panel-head">
+        <h1 id="createTitle">Create a song</h1>
+        <div class="seg" role="tablist" aria-label="Creation mode">
+          <button role="tab" class="seg-btn active" data-mode="simple" aria-selected="true">Simple</button>
+          <button role="tab" class="seg-btn" data-mode="custom" aria-selected="false">Custom</button>
+        </div>
+      </div>
+
+      <form id="genForm" novalidate>
+        <!-- SIMPLE MODE -->
+        <div class="mode mode-simple">
+          <label class="field">
+            <span class="label">Song description</span>
+            <textarea id="prompt" rows="4" maxlength="3000" placeholder="An upbeat summer pop anthem about road-tripping with friends, catchy chorus, female vocals"></textarea>
+            <span class="counter" data-for="prompt">0 / 3000</span>
+          </label>
+          <div class="field">
+            <span class="label">Quick ideas</span>
+            <div class="chips" id="ideaChips"></div>
+          </div>
+        </div>
+
+        <!-- CUSTOM MODE -->
+        <div class="mode mode-custom" hidden>
+          <label class="field">
+            <span class="label">Title <em>optional</em></span>
+            <input id="title" type="text" maxlength="80" placeholder="Midnight Drive" />
+          </label>
+
+          <div class="field lyrics-field">
+            <div class="label-row">
+              <span class="label">Lyrics</span>
+              <button type="button" class="link-btn" id="aiLyricsBtn">
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="m12 2 1.9 5.6L19.5 9l-5.6 1.9L12 16.5l-1.9-5.6L4.5 9l5.6-1.4L12 2Zm6 12 .9 2.6 2.6.9-2.6.9L18 21l-.9-2.6-2.6-.9 2.6-.9L18 14Z"/></svg>
+                Write with AI
+              </button>
+            </div>
+            <textarea id="lyrics" rows="8" maxlength="5000" placeholder="[Verse]&#10;Neon lights on an empty street...&#10;&#10;[Chorus]&#10;..."></textarea>
+            <span class="counter" data-for="lyrics">0 / 5000</span>
+          </div>
+        </div>
+
+        <!-- SHARED -->
+        <label class="field">
+          <span class="label">Style of music <em class="simple-only">optional</em></span>
+          <input id="style" type="text" maxlength="1000" placeholder="indie pop, dreamy synths, 110 bpm" />
+        </label>
+        <div class="chips" id="styleChips"></div>
+
+        <div class="row">
+          <label class="toggle">
+            <input type="checkbox" id="instrumental" />
+            <span class="toggle-ui" aria-hidden="true"></span>
+            <span>Instrumental <small>(no vocals)</small></span>
+          </label>
+          <label class="select-wrap">
+            <span class="sr-only">Model</span>
+            <select id="model">
+              <option value="V6">V6 · Best quality</option>
+              <option value="V6_MINI">V6 Mini · Fastest</option>
+              <option value="V6_WILD">V6 Wild · Most creative</option>
+            </select>
+          </label>
+        </div>
+
+        <details class="advanced mode-custom" hidden>
+          <summary>Advanced options</summary>
+          <div class="adv-grid">
+            <label class="field">
+              <span class="label">Exclude styles</span>
+              <input id="negativeTags" type="text" maxlength="1000" placeholder="heavy metal, screaming" />
+            </label>
+            <div class="field">
+              <span class="label">Vocal gender</span>
+              <div class="seg small" id="vocalSeg">
+                <button type="button" class="seg-btn active" data-v="">Any</button>
+                <button type="button" class="seg-btn" data-v="f">Female</button>
+                <button type="button" class="seg-btn" data-v="m">Male</button>
+              </div>
+            </div>
+            <label class="field range">
+              <span class="label">Style adherence <output id="styleWeightOut">0.65</output></span>
+              <input id="styleWeight" type="range" min="0" max="1" step="0.01" value="0.65" />
+            </label>
+            <label class="field range">
+              <span class="label">Weirdness <output id="weirdnessOut">0.50</output></span>
+              <input id="weirdness" type="range" min="0" max="1" step="0.01" value="0.5" />
+            </label>
+            <label class="field range">
+              <span class="label">Variety <output id="varietyOut">Normal</output></span>
+              <input id="variety" type="range" min="0" max="4" step="1" value="1" />
+            </label>
+            <label class="field range">
+              <span class="label">Length <output id="durationOut">Auto</output></span>
+              <input id="duration" type="range" min="0" max="360" step="10" value="0" />
+            </label>
+          </div>
+        </details>
+
+        <div class="access" id="accessWrap" hidden>
+          <label class="field">
+            <span class="label">Access code</span>
+            <input id="accessCode" type="password" autocomplete="off" placeholder="Enter the access code" />
+          </label>
+        </div>
+
+        <p class="form-error" id="formError" role="alert" hidden></p>
+
+        <button class="cta" type="submit" id="createBtn">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="m12 2 1.9 5.6L19.5 9l-5.6 1.9L12 16.5l-1.9-5.6L4.5 9l5.6-1.4L12 2Zm6 12 .9 2.6 2.6.9-2.6.9L18 21l-.9-2.6-2.6-.9 2.6-.9L18 14Z"/></svg>
+          <span>Create</span>
+        </button>
+        <p class="fineprint">Each request creates two variations. Tracks are hosted for 14 days — download the ones you love.</p>
+      </form>
+    </section>
+
+    <!-- ============ LIBRARY ============ -->
+    <section class="panel library" aria-labelledby="libTitle">
+      <div class="panel-head">
+        <h2 id="libTitle">Your library</h2>
+        <div class="lib-tools">
+          <input id="search" type="search" placeholder="Search songs" aria-label="Search songs" />
+        </div>
+      </div>
+      <div id="jobs"></div>
+      <ul class="tracks" id="tracks"></ul>
+      <div class="empty" id="empty">
+        <div class="empty-art" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <h3>No songs yet</h3>
+        <p>Describe a song and hit <strong>Create</strong>. Your first track usually starts streaming in under a minute.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ PLAYER ============ -->
+  <footer class="player" id="player" hidden>
+    <img class="pl-cover" id="plCover" alt="" />
+    <div class="pl-meta">
+      <div class="pl-title" id="plTitle">—</div>
+      <div class="pl-tags" id="plTags"></div>
+    </div>
+    <div class="pl-controls">
+      <button class="icon-btn" id="plPrev" aria-label="Previous">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+      </button>
+      <button class="icon-btn play" id="plPlay" aria-label="Play">
+        <svg class="i-play" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+        <svg class="i-pause" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+      </button>
+      <button class="icon-btn" id="plNext" aria-label="Next">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+      </button>
+    </div>
+    <div class="pl-seek">
+      <span id="plCur">0:00</span>
+      <input type="range" id="plSeek" min="0" max="1000" value="0" aria-label="Seek" />
+      <span id="plDur">0:00</span>
+    </div>
+    <audio id="audio" preload="none"></audio>
+  </footer>
+
+  <!-- ============ LYRICS DIALOG ============ -->
+  <dialog id="lyricsDialog" class="dialog">
+    <form method="dialog" class="dialog-body" id="lyricsForm">
+      <h3>Write lyrics with AI</h3>
+      <label class="field">
+        <span class="label">What should the song be about?</span>
+        <input id="lyricsTopic" type="text" maxlength="200" placeholder="A bittersweet goodbye at a train station in the rain" />
+      </label>
+      <div id="lyricsResults" class="lyrics-results"></div>
+      <p class="form-error" id="lyricsError" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" class="ghost" value="cancel" id="lyricsCancel">Close</button>
+        <button type="button" class="cta small" id="lyricsGo">Generate lyrics</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============ LYRICS VIEW ============ -->
+  <dialog id="viewDialog" class="dialog">
+    <div class="dialog-body">
+      <h3 id="viewTitle"></h3>
+      <p class="muted" id="viewTags"></p>
+      <pre class="lyrics-view" id="viewLyrics"></pre>
+      <div class="dialog-actions">
+        <button type="button" class="ghost" id="viewReuse">Reuse in Custom</button>
+        <button type="button" class="cta small" id="viewClose">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
